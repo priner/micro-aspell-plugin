@@ -101,6 +101,12 @@ function highlight(out, args)
 
     buf:ClearMessages("aspell")
 
+    -- This is a hack that keeps the text shifted two columns to the right
+    -- even when no gutter messages are shown
+    local msg = "This message shouldn't be visible (Aspell plugin)"
+    local bmsg = buffer.NewMessageAtLine("aspell", msg, 0, buffer.MTError)
+    buf:AddMessage(bmsg)
+
     local linenumber = 1
     local lines = split(out, "\n")
     for _, line in ipairs(lines) do
