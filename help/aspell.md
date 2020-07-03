@@ -54,3 +54,8 @@ You can also disable or enable spellchecking for specific file types in your
 * `addpersonal`: adds the word the cursor is on to your personal dictionary, so
    that it won't be highlighted as a misspell anymore. You can bind it to a key
    as `lua:aspell.addpersonal`.
+
+* `acceptsug 'n'?`: accepts the nth suggestion for the word the cursor is on.
+   You can bind it to a key as `lua:aspell.acceptsug`. If `n` is not provided or
+   this command is invoked with a keyboard shortcut it will start to cycle
+   through the suggestions. Use `Tab` and `Backtab` to cycle through them.
