@@ -13,6 +13,7 @@ config.RegisterCommonOption("aspell", "args", "")
 
 function init()
     config.MakeCommand("addpersonal", addpersonal, config.NoComplete)
+    config.MakeCommand("acceptsug", acceptsug, config.NoComplete)
     config.AddRuntimeFile("aspell", config.RTHelp, "help/aspell.md")
 end
 
@@ -34,7 +35,7 @@ local filterModes = {
 local lock = false
 local next = nil
 
-function runAspell(buf, onExit)
+function runAspell(buf, onExit, ...)
     local text = util.String(buf:Bytes())
 
     -- Escape for aspell (it interprets lines that start
@@ -64,7 +65,7 @@ function runAspell(buf, onExit)
     end
 
     shell.JobStart("echo " .. text .. " | aspell pipe" .. options, nil,
-            nil, onExit, buf)
+            nil, onExit, buf, unpack(arg))
 end
 
 function spellcheck(buf)
@@ -183,6 +184,44 @@ function addpersonal2(out, args)
             shell.ExecCommand("sh", "-c", "echo '*" .. misspell.word
                     .. "\n#\n' | aspell pipe" .. options)
             spellcheck(buf)
+        end
+    end
+end
+
+function acceptsug(bp, args)
+    local n = 0
+    if args and #args > 0 then
+        n = tonumber(args[1])
+    end
+    local check = bp.Buf.Settings["aspell.check"]
+    if check == "on" or (check == "auto" and filterModes[bp.Buf:FileType()]) then
+        runAspell(bp.Buf, acceptsug2, n)
+    end
+end
+
+function acceptsug2(out, args)
+    local buf = args[1]
+    local n = args[2]
+    local loc = buf:GetActiveCursor().Loc
+
+    for _, misspell in ipairs(parseOutput(out)) do
+        if loc:GreaterEqual(misspell.mstart) and loc:LessEqual(misspell.mend) then
+            if misspell.suggestions[n] then
+                -- If n is  in the range we'll accept n-th suggestion
+                buf:GetActiveCursor():GotoLoc(misspell.mend)
+                buf:Replace(misspell.mstart, misspell.mend, misspell.suggestions[n])
+                spellcheck(buf)
+            elseif #(misspell.suggestions) > 0 then
+                -- If n is 0 indicating acceptsug was called with no arguments
+                -- we will cycle through the suggestions autocomplete-like
+                buf:GetActiveCursor():GotoLoc(misspell.mend)
+                buf:Remove(misspell.mstart, misspell.mend)
+                buf:Autocomplete(function ()
+                    return misspell.suggestions, misspell.suggestions
+                end)
+                spellcheck(buf)
+            end
+            return
         end
     end
 end
