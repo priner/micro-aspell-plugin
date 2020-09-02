@@ -157,18 +157,42 @@ function highlight(out, args)
     end
 end
 
-function addpersonal(bp)
-    local check = bp.Buf.Settings["aspell.check"]
-    if check == "on" or (check == "auto" and filterModes[bp.Buf:FileType()]) then
-        runAspell(bp.Buf, addpersonal2)
+function parseMessages(messages)
+    local patterns = {"^(.-) %-> (.+)$", "^(.-) %->X$"}
+
+    if messages == nil then
+        return {}
     end
+
+    local misspells = {}
+
+    for i=1, #messages do
+        local message = messages[i]
+        if message.Owner == "aspell" then
+            for _, pattern in ipairs(patterns) do
+                if string.find(message.Msg, pattern) then
+                    local word, suggestions = string.match(message.Msg, pattern)
+
+                    misspells[#misspells + 1] = {
+                        word = word,
+                        mstart = -message.Start,
+                        mend = -message.End,
+                        suggestions = suggestions and split(suggestions, ", ") or {},
+                    }
+                end
+            end
+        end
+    end
+
+    return misspells
 end
 
-function addpersonal2(out, args)
-    local buf = args[1]
+function addpersonal(bp, args)
+    local buf = bp.Buf
+
     local loc = buf:GetActiveCursor().Loc
 
-    for _, misspell in ipairs(parseOutput(out)) do
+    for _, misspell in ipairs(parseMessages(buf.Messages)) do
         if loc:GreaterEqual(misspell.mstart) and loc:LessEqual(misspell.mend) then
             local options = ""
             if buf.Settings["aspell.lang"] ~= "" then
@@ -185,34 +209,42 @@ function addpersonal2(out, args)
 
             shell.ExecCommand("sh", "-c", "echo '*" .. misspell.word
                     .. "\n#\n' | aspell pipe" .. options)
+
             spellcheck(buf)
+            if args then
+                return
+            end
+            return true
         end
     end
+
+    if args then
+        return
+    end
+    return false
 end
 
 function acceptsug(bp, args)
-    local n = 0
+    local buf = bp.Buf
+    local n = nil
     if args and #args > 0 then
         n = tonumber(args[1])
     end
-    local check = bp.Buf.Settings["aspell.check"]
-    if check == "on" or (check == "auto" and filterModes[bp.Buf:FileType()]) then
-        runAspell(bp.Buf, acceptsug2, n)
-    end
-end
 
-function acceptsug2(out, args)
-    local buf = args[1]
-    local n = args[2]
     local loc = buf:GetActiveCursor().Loc
 
-    for _, misspell in ipairs(parseOutput(out)) do
+    for _, misspell in ipairs(parseMessages(buf.Messages)) do
         if loc:GreaterEqual(misspell.mstart) and loc:LessEqual(misspell.mend) then
             if misspell.suggestions[n] then
-                -- If n is  in the range we'll accept n-th suggestion
+                -- If n is in the range we'll accept n-th suggestion
                 buf:GetActiveCursor():GotoLoc(misspell.mend)
                 buf:Replace(misspell.mstart, misspell.mend, misspell.suggestions[n])
+
                 spellcheck(buf)
+                if args then
+                    return
+                end
+                return true
             elseif #(misspell.suggestions) > 0 then
                 -- If n is 0 indicating acceptsug was called with no arguments
                 -- we will cycle through the suggestions autocomplete-like
@@ -221,11 +253,20 @@ function acceptsug2(out, args)
                 buf:Autocomplete(function ()
                     return misspell.suggestions, misspell.suggestions
                 end)
+
                 spellcheck(buf)
+                if args then
+                    return
+                end
+                return true
             end
-            return
         end
     end
+
+    if args then
+        return
+    end
+    return false
 end
 
 function split(str, pat)
@@ -254,11 +295,13 @@ function onBufferOpen(buf)
     spellcheck(buf)
 end
 
+-- The following callbacks are undocumented
+
 function onRune(bp)
     spellcheck(bp.Buf)
 end
 
-function onPastePrimary(bp) -- I'm not sure if this exists
+function onCycleAutocompleteBack(bp)
     spellcheck(bp.Buf)
 end
 
