@@ -193,7 +193,9 @@ function addpersonal(bp, args)
     local loc = buf:GetActiveCursor().Loc
 
     for _, misspell in ipairs(parseMessages(buf.Messages)) do
-        if loc:GreaterEqual(misspell.mstart) and loc:LessEqual(misspell.mend) then
+        local wordInBuf = util.String(buf:Substr(misspell.mstart, misspell.mend))
+        if loc:GreaterEqual(misspell.mstart) and loc:LessEqual(misspell.mend)
+                and wordInBuf == misspell.word then
             local options = ""
             if buf.Settings["aspell.lang"] ~= "" then
                 options = options .. " --lang="
@@ -234,7 +236,9 @@ function acceptsug(bp, args)
     local loc = buf:GetActiveCursor().Loc
 
     for _, misspell in ipairs(parseMessages(buf.Messages)) do
-        if loc:GreaterEqual(misspell.mstart) and loc:LessEqual(misspell.mend) then
+        local wordInBuf = util.String(buf:Substr(misspell.mstart, misspell.mend))
+        if loc:GreaterEqual(misspell.mstart) and loc:LessEqual(misspell.mend)
+                and wordInBuf == misspell.word then
             if misspell.suggestions[n] then
                 -- If n is in the range we'll accept n-th suggestion
                 buf:GetActiveCursor():GotoLoc(misspell.mend)
