@@ -66,7 +66,7 @@ function runAspell(buf, onExit, ...)
         options = options .. " " .. buf.Settings["aspell.args"]
     end
 
-    shell.JobStart("echo " .. text .. " | aspell pipe" .. options, nil,
+    shell.JobStart("printf %s " .. text .. " | aspell pipe" .. options, nil,
             nil, onExit, buf, unpack(arg))
 end
 
