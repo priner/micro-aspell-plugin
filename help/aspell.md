@@ -1,8 +1,8 @@
 # Aspell plugin
 
-Spellchecking will be done as you type. It is aware of XML, HTML, TeX and
-Markdown syntax. On C++, C and Perl only comments and string literals will be
-checked.
+The text will be checked for misspells as you type. It understands the syntax
+of XML, HTML, TeX and Markdown. On C++, C and Perl only comments and string
+literals will be checked.
 
 You need to have Aspell installed and available in your PATH. It does not come
 with this plugin. This plugin also currently doesn't work on Windows.
@@ -26,7 +26,7 @@ Aspell will follow locale settings.
 * `aspell.sugmode`: one of `ultra`, `fast`, `normal`, `slow` or `bad-spellers`.
    It will be passed to Aspell in the `--sug-mode` option. Defaults to `normal`.
    You may wish to change it to `fast`, if you feel that the spellchecking is
-   too slow. For explanation of what each option does, see
+   too slow. For an explanation of what each option does, see
    http://aspell.net/man-html/Notes-on-the-Different-Suggestion-Modes.html
 
 * `aspell.args`: additional command line arguments, that will be passed to
@@ -57,5 +57,14 @@ You can also disable or enable spellchecking for specific file types in your
 
 * `acceptsug 'n'?`: accepts the nth suggestion for the word the cursor is on.
    You can bind it to a key as `lua:aspell.acceptsug`. If `n` is not provided or
-   this command is invoked with a keyboard shortcut it will start to cycle
+   this command is invoked with a keyboard shortcut, it will start to cycle
    through the suggestions. Use `Tab` and `Backtab` to cycle through them.
+
+You can also use them in chain keybindings with `,`, `&` and `|` (see
+`help keybindings`). Example `bindings.json`:
+
+```json
+{
+    "Tab": "Autocomplete|lua:aspell.acceptsug|IndentSelection|InsertTab"
+}
+```
