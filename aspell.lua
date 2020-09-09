@@ -38,36 +38,37 @@ local lock = false
 local next = nil
 
 function runAspell(buf, onExit, ...)
-    local text = util.String(buf:Bytes())
-
-    -- Escape for aspell (it interprets lines that start
-    -- with % @ ^ ! etc.)
-    text = text:gsub("\n", "\n^"):gsub("^", "^")
-    -- Enable terse mode
-    text = "!\n" .. text
-    -- Escape for shell
-    text = "'" .. text:gsub("'", "'\\''") .. "'"
-
-    local options = ""
+    local options = {"pipe"}
     -- FIXME: we should support non-utf8 encodings with '--encoding'
     if filterModes[buf:FileType()] then
-        options = options .. " --mode=" .. filterModes[buf:FileType()]
+        options[#options + 1] = "--mode=" .. filterModes[buf:FileType()]
     end
     if buf.Settings["aspell.lang"] ~= "" then
-        options = options .. " --lang=" .. buf.Settings["aspell.lang"]
+        options[#options + 1] = "--lang=" .. buf.Settings["aspell.lang"]
     end
     if buf.Settings["aspell.dict"] ~= "" then
-        options = options .. " --master=" .. buf.Settings["aspell.dict"]
+        options[#options + 1] = "--master=" .. buf.Settings["aspell.dict"]
     end
     if buf.Settings["aspell.sugmode"] ~= "" then
-        options = options .. " --sug-mode=" .. buf.Settings["aspell.sugmode"]
+        options[#options + 1] = "--sug-mode=" .. buf.Settings["aspell.sugmode"]
     end
-    if buf.Settings["aspell.args"] ~= "" then
-        options = options .. " " .. buf.Settings["aspell.args"]
+    for _, argument in ipairs(split(buf.Settings["aspell.args"], " ")) do
+        options[#options + 1] = argument
     end
 
-    shell.JobStart("printf %s " .. text .. " | aspell pipe" .. options, nil,
+    local job = shell.JobSpawn("aspell", options, nil,
             nil, onExit, buf, unpack(arg))
+    -- Enable terse mode
+    shell.JobSend(job, "!\n")
+    for i=0, buf:LinesNum() - 1 do
+        local line = util.String(buf:LineBytes(i))
+        -- Escape for aspell (it interprets lines that start
+        -- with % @ ^ ! etc.)
+        line = "^" .. line .. "\n"
+
+        shell.JobSend(job, line)
+    end
+    job.Stdin:Close()
 end
 
 function spellcheck(buf)
@@ -196,23 +197,23 @@ function addpersonal(bp, args)
         local wordInBuf = util.String(buf:Substr(misspell.mstart, misspell.mend))
         if loc:GreaterEqual(misspell.mstart) and loc:LessEqual(misspell.mend)
                 and wordInBuf == misspell.word then
-            local options = ""
+            local options = {"pipe"}
             if buf.Settings["aspell.lang"] ~= "" then
-                options = options .. " --lang="
-                        .. buf.Settings["aspell.lang"]
+                options[#options + 1] = "--lang=" .. buf.Settings["aspell.lang"]
             end
             if buf.Settings["aspell.dict"] ~= "" then
-                options = options .. " --master="
-                        .. buf.Settings["aspell.dict"]
+                options[#options + 1] = "--master=" .. buf.Settings["aspell.dict"]
             end
-            if buf.Settings["aspell.args"] ~= "" then
-                options = options .. " " .. buf.Settings["aspell.args"]
+            for _, argument in ipairs(split(buf.Settings["aspell.args"], " ")) do
+                options[#options + 1] = argument
             end
 
-            shell.ExecCommand("sh", "-c", "echo '*" .. misspell.word
-                    .. "\n#\n' | aspell pipe" .. options)
+            local job = shell.JobSpawn("aspell", options, nil, nil, function ()
+                spellcheck(buf)
+            end)
+            shell.JobSend(job, "*" .. misspell.word .. "\n#\n")
+            job.Stdin:Close()
 
-            spellcheck(buf)
             if args then
                 return
             end
