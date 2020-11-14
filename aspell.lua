@@ -38,8 +38,7 @@ local lock = false
 local next = nil
 
 function runAspell(buf, onExit, ...)
-    local options = {"pipe"}
-    -- FIXME: we should support non-utf8 encodings with '--encoding'
+    local options = {"pipe", "--encoding=utf-8"}
     if filterModes[buf:FileType()] then
         options[#options + 1] = "--mode=" .. filterModes[buf:FileType()]
     end
@@ -197,7 +196,7 @@ function addpersonal(bp, args)
         local wordInBuf = util.String(buf:Substr(misspell.mstart, misspell.mend))
         if loc:GreaterEqual(misspell.mstart) and loc:LessEqual(misspell.mend)
                 and wordInBuf == misspell.word then
-            local options = {"pipe"}
+            local options = {"pipe", "--encoding=utf-8"}
             if buf.Settings["aspell.lang"] ~= "" then
                 options[#options + 1] = "--lang=" .. buf.Settings["aspell.lang"]
             end
