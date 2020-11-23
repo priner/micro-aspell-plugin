@@ -5,7 +5,8 @@ of XML, HTML, TeX and Markdown. On C++, C and Perl only comments and string
 literals will be checked.
 
 You need to have Aspell installed and available in your PATH. It does not come
-with this plugin. This plugin also currently doesn't work on Windows.
+with this plugin. If you are on Windows, you can install Aspell through
+[MSYS2](https://www.msys2.org/).
 
 ## Options
 
