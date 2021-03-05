@@ -73,7 +73,8 @@ end
 
 function spellcheck(buf)
     local check = buf.Settings["aspell.check"]
-    if check == "on" or (check == "auto" and filterModes[buf:FileType()]) then
+    local readcheck = buf.Type.Readonly
+    if (check == "on" or (check == "auto" and filterModes[buf:FileType()])) and (not readcheck) then
         if lock then
             next = buf
         else
