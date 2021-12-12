@@ -44,6 +44,9 @@ You can also disable or enable spellchecking for specific file types in your
     "*.txt": {
         "aspell.check": "on"
     },
+    "*COMMIT_EDITMSG": {
+        "aspell.check": "on"
+    },
     "ft:markdown": {
         "aspell.check": "off"
     }
