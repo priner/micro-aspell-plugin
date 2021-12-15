@@ -52,6 +52,10 @@ You can also disable or enable spellchecking for specific file types in your
 
 ## Commands
 
+* `togglecheck`: turns the spellchecking on/off. You can bind it to a key as
+   `lua:aspell.addpersonal`. The effect's the same as changing `aspell.check`
+   using `setlocal`.
+
 * `addpersonal`: adds the word the cursor is on to your personal dictionary, so
    that it won't be highlighted as a misspell anymore. You can bind it to a key
    as `lua:aspell.addpersonal`.

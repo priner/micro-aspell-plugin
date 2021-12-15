@@ -16,6 +16,7 @@ config.RegisterCommonOption("aspell", "args", "")
 function init()
     config.MakeCommand("addpersonal", addpersonal, config.NoComplete)
     config.MakeCommand("acceptsug", acceptsug, config.NoComplete)
+    config.MakeCommand("togglecheck", togglecheck, config.NoComplete)
     config.AddRuntimeFile("aspell", config.RTHelp, "help/aspell.md")
 end
 
@@ -185,6 +186,21 @@ function parseMessages(messages)
     end
 
     return misspells
+end
+
+function togglecheck(bp, args)
+	local buf = bp.Buf
+	local check = buf.Settings["aspell.check"]
+    if check == "on" or (check == "auto" and filterModes[buf:FileType()]) then
+		buf.Settings["aspell.check"] = "off"
+	else
+		buf.Settings["aspell.check"] = "on"
+	end
+	spellcheck(buf)
+	if args then
+        return
+    end
+    return true
 end
 
 function addpersonal(bp, args)
