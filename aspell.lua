@@ -31,6 +31,10 @@ local filterModes = {
     perl6 = "perl",
     tex = "tex",
     markdown = "markdown",
+    groff = "nroff",
+    man = "nroff",
+    ["git-commit"] = "url",
+    mail = "email"
     -- Aspell has comment mode, in which only lines starting with # are checked
     -- but it doesn't work for some reason
 }
